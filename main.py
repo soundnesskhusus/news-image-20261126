@@ -1,37 +1,76 @@
 #!/usr/bin/env python3
-"""Entry program for news-image-20261126.
+"""Entry point for news-image-20261126 (v2 evening refresh).
 
-Copies the front-page image held in this repository to /output/entry.png.
-No network, no randomness: both runs write the same bytes.
+Takes the front-page image bundled in this repository and writes it to
+the grader's output directory as /output/entry.png.
+
+The run is fully deterministic and offline: the same input bytes always
+produce the same output bytes, and no network access is needed.
 """
 import os
 import shutil
 import struct
+import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-SRC = HERE / "entry.png"
-OUT_DIR = Path(os.environ.get("MAKEFUN_OUTPUT_DIR", "/output"))
-DST = OUT_DIR / "entry.png"
-MAX_BYTES = 1_048_576
+BASE = Path(__file__).resolve().parent
+SOURCE = BASE / "entry.png"
+DEST_DIR = Path(os.environ.get("MAKEFUN_OUTPUT_DIR", "/output"))
+DEST = DEST_DIR / "entry.png"
+
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+EXPECTED_SIZE = (1024, 1024)
+BYTE_LIMIT = 1_048_576
 
 
-def check_png(path):
-    """Confirm path is a whole PNG of 1024x1024 at most and under the cap."""
-    data = path.read_bytes()
-    assert data[:8] == b"\x89PNG\r\n\x1a\n", "not a PNG"
-    assert len(data) <= MAX_BYTES, "over the 1 MiB cap"
-    width, height = struct.unpack(">II", data[16:24])
-    assert (width, height) == (1024, 1024), "not 1024x1024"
-    return len(data)
+def read_png_bytes(path):
+    """Read a file and confirm it starts with the PNG signature."""
+    blob = path.read_bytes()
+    if blob[:8] != PNG_MAGIC:
+        raise ValueError(f"{path} does not start with a PNG signature")
+    return blob
 
 
-def main():
-    DST.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(SRC, DST)
-    size = check_png(DST)
-    print(f"wrote {DST} ({size} bytes, valid 1024x1024 PNG)")
+def ihdr_dimensions(blob):
+    """Pull the width and height out of the PNG IHDR chunk."""
+    if len(blob) < 24:
+        raise ValueError("file too short to hold a PNG header")
+    if blob[12:16] != b"IHDR":
+        raise ValueError("first PNG chunk is not IHDR")
+    chunk_len = struct.unpack(">I", blob[8:12])[0]
+    if chunk_len != 13:
+        raise ValueError(f"IHDR chunk is {chunk_len} bytes, expected 13")
+    width, height = struct.unpack(">II", blob[16:24])
+    return width, height
+
+
+def validate(blob):
+    """Check the image is a 1024x1024 PNG under the 1 MiB cap."""
+    if len(blob) > BYTE_LIMIT:
+        raise ValueError(f"image is {len(blob)} bytes, over the 1 MiB cap")
+    dims = ihdr_dimensions(blob)
+    if dims != EXPECTED_SIZE:
+        raise ValueError(f"image is {dims[0]}x{dims[1]}, expected 1024x1024")
+    return dims
+
+
+def deliver():
+    """Validate the bundled image, then copy it to the output directory."""
+    blob = read_png_bytes(SOURCE)
+    dims = validate(blob)
+    DEST_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(SOURCE, DEST)
+    # Re-read the copy so the check covers what was actually written.
+    written = read_png_bytes(DEST)
+    if written != blob:
+        raise ValueError("output copy differs from the bundled image")
+    print(f"wrote {DEST} ({len(blob)} bytes, valid "
+          f"{dims[0]}x{dims[1]} PNG)")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        deliver()
+    except (OSError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        raise SystemExit(1)
