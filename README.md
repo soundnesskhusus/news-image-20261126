@@ -8,12 +8,14 @@ Entry for the [make.fun bounty "Sum up 26 November's world news in one
 image"](https://make.fun/bounty/news-image-20261126).
 
 A newspaper front page that sums up Thursday 26 November 2026 in six
-verified stories, each first reported that day: Kim Jong Un's vow to
-build more nuclear weapons, the Bank of Korea lifting its key rate to
-3.25%, Hong Kong marking one year since the Wang Fuk Court fire that
-killed 168, Chinese consumer-rights campaigner Wang Hai stranded in
-South Korea, Asian shares rebounding on AI stocks, and fresh protests
-in Bangladesh after a garment wage deal fell short.
+verified stories, each first reported that day (evening edition, v2
+refresh of the morning entry): Ukraine's overnight drone strikes on a
+Transneft oil hub in Bashkortostan and the Marinovka airfield, Bulgaria
+backing the €45bn EU loan for Ukraine but only its civilian part,
+UniCredit moving to take over the Commerzbank board, Rwanda hiking its
+key rate to 9.5% as inflation hit 19.5%, Dutch groups asking a court to
+halt sales of Meta's AI smart glasses, and US chip curbs slowing
+China's AI labs.
 
 ## How it works
 
